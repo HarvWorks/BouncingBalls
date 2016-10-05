@@ -4,7 +4,12 @@
 	<meta charset="utf-8">
 </head>
 <body>
-
+	<div class="Title">
+		<h1>Physics based balls!</h1>
+		<p>
+			Bounces off of each other using perfectly elastic collisions and merges together as a pefectly inelastic collision when the colors are similar enough.
+		</p>
+	</div>
 	<svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
 
 	<script>
@@ -13,8 +18,8 @@
 	function displayWindowSize() {
 		screenWidth = window.innerWidth;
 		screenHeight = window.innerHeight;
-		document.getElementById("svg").style.height = String(screenHeight) + "px";
-		document.getElementById("svg").style.width = String(screenWidth) + "px";
+		document.getElementById("svg").style.height = String(screenHeight - 110) + "px";
+		document.getElementById("svg").style.width = String(screenWidth - 10) + "px";
 	};
 	var mousedown_time;
 	var time_pressed = 0;
@@ -83,7 +88,7 @@
 		this.update = function(time){
 			var el = document.getElementById(html_id);
 			//see if the circle is going outside the browser. if it is, reverse the velocity
-			if( this.info.cx + this.radius > document.body.clientWidth)
+			if( this.info.cx + this.radius > document.body.clientWidth - 10)
 			{
 				if( this.info.velocity.x > 0){
 					this.info.velocity.x = this.info.velocity.x * -1;
@@ -95,7 +100,7 @@
 					this.info.velocity.x = this.info.velocity.x * -1;
 				}
 			}
-			if( this.info.cy + this.radius > document.body.clientHeight)
+			if( this.info.cy + this.radius > document.body.clientHeight - 110)
 			{
 				if( this.info.velocity.y > 0){
 					this.info.velocity.y = this.info.velocity.y * -1;
