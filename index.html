@@ -1,6 +1,7 @@
 <html>
 <head>
 	<title>Javascript Box - OOP demo</title>
+	<meta charset="utf-8">
 </head>
 <body>
 
@@ -15,50 +16,97 @@
 		document.getElementById("svg").style.height = String(screenHeight) + "px";
 		document.getElementById("svg").style.width = String(screenWidth) + "px";
 	};
+	var mousedown_time;
+	var time_pressed = 0;
+	function getTime(){
+		var date = new Date();
+		return date.getTime();
+	}
+
+	document.onmousedown = function(e){
+		mousedown_time = getTime();
+	}
+	document.onmouseup = function(e){
+		time_pressed = getTime() - mousedown_time;
+		console.log('You held your mouse down for', time_pressed, 'miliseconds.');
+	}
 	function Circle(cx, cy, html_id)
 	{
 		var html_id = html_id;
 		this.info = { cx: cx,  cy: cy };
 
+		if (time_pressed > 4000){
+			time_pressed = 3700 + Math.random() * 600;
+		};
+		if (time_pressed < 150){
+			time_pressed = 100 + Math.random() * 100;
+		};
+		this.radius = Math.sqrt(0.5 * time_pressed);
+
 		//private function that generates a random number
 		var randomNumberBetween = function(min, max){
-			return Math.random()*(max-min) + min;
+			var temp;
+			if(Math.round(Math.random())){
+				temp = (Math.random()*(max-min) + min)
+			}
+			else{
+				temp = -(Math.random()*(max-min) + min)
+			}
+			return temp;
 		}
 
-		var radius = 10
 
 		this.initialize = function(){
 			//give a random velocity for the circle
+			var randomDirection = Math.random() * 2 * Math.PI;
+			var randomSpeed = randomNumberBetween(1.5,3) / this.radius * 15
 			this.info.velocity = {
-				x: randomNumberBetween(-3,3),
-				y: randomNumberBetween(-3,3)
+				x: Math.cos(randomDirection) * randomSpeed,
+				y: Math.sin(randomDirection) * randomSpeed
 			}
-
 			//create a circle
-			var circle = makeSVG('circle',
+			var tempColor = "fill:rgb(" + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + ")"
+			// var tempColor = "fill:rgb(255,0,0)"
+			this.circle = makeSVG('circle',
 				{ 	cx: this.info.cx,
 				  	cy: this.info.cy,
-				  	r:  radius,
+				  	r:  this.radius,
 				  	id: html_id,
-				  	style: "fill: black"
+				  	style: tempColor
 				});
 
-			document.getElementById('svg').appendChild(circle);
-			this.radius = 1
+			document.getElementById('svg').appendChild(this.circle);
 		}
+
+		this.touching = false
 
 		this.update = function(time){
 			var el = document.getElementById(html_id);
 			//see if the circle is going outside the browser. if it is, reverse the velocity
-			if( this.info.cx + radius > document.body.clientWidth || this.info.cx - radius < 0)
+			if( this.info.cx + this.radius > document.body.clientWidth)
 			{
-				this.info.velocity.x = this.info.velocity.x * -1;
+				if( this.info.velocity.x > 0){
+					this.info.velocity.x = this.info.velocity.x * -1;
+				}
 			}
-			if( this.info.cy + radius > document.body.clientHeight || this.info.cy - radius < 0)
+			if(this.info.cx - this.radius < 0)
 			{
-				this.info.velocity.y = this.info.velocity.y * -1;
+				if( this.info.velocity.x < 0){
+					this.info.velocity.x = this.info.velocity.x * -1;
+				}
 			}
-
+			if( this.info.cy + this.radius > document.body.clientHeight)
+			{
+				if( this.info.velocity.y > 0){
+					this.info.velocity.y = this.info.velocity.y * -1;
+				}
+			}
+			if(this.info.cy - this.radius < 0)
+			{
+				if( this.info.velocity.y < 0){
+					this.info.velocity.y = this.info.velocity.y * -1;
+				}
+			}
 			this.info.cx = this.info.cx + this.info.velocity.x*time;
 			this.info.cy = this.info.cy + this.info.velocity.y*time;
 
@@ -66,6 +114,100 @@
 			el.setAttribute("cy", this.info.cy);
 		}
 
+		this.collision = function(index,circles)
+{			for (var i = 0; i < circles.length; i++) {
+				if (i != index){
+					if(this.info.cx + this.radius > circles[i].info.cx - circles[i].radius && this.info.cx - this.radius < circles[i].info.cx + circles[i].radius ){
+						if(this.info.cy + this.radius > circles[i].info.cy - circles[i].radius && this.info.cy - this.radius < circles[i].info.cy + circles[i].radius ){
+							if (Math.sqrt((this.info.cy - circles[i].info.cy) * (this.info.cy - circles[i].info.cy) + (this.info.cx - circles[i].info.cx) * (this.info.cx - circles[i].info.cx)) < this.radius + circles[i].radius ){
+								if(this.touching == false && circles[i].touching == false){
+									var circle1m = this.radius * this.radius * 3.14
+									var circle2m = circles[i].radius * circles[i].radius * 3.14
+									var tempColor1 = this.circle.style.cssText.split("(")
+									tempColor1 = tempColor1[1].split(")")
+									tempColor1 = tempColor1[0].split(",")
+									var tempColor2 = circles[i].circle.style.cssText.split("(")
+									tempColor2 = tempColor2[1].split(")")
+									tempColor2 = tempColor2[0].split(",")
+									if(tempColor2[0] + 10 > tempColor1[0] && tempColor2[0] - 10 < tempColor1[0] && tempColor2[1] + 10 > tempColor1[1] && tempColor2[1] - 10 < tempColor1[1] && tempColor2[2] + 10 > tempColor1[2] && tempColor2[2] - 10 < tempColor1[2]){
+										if (circle1m > circle2m){
+											this.info.velocity.x = (this.info.velocity.x * circle1m + circles[i].info.velocity.x * circle2m) / (circle1m + circle2m)
+											this.info.velocity.y = (this.info.velocity.y * circle1m + circles[i].info.velocity.y * circle2m) / (circle1m + circle2m)
+											this.circle.r.baseVal.value = Math.sqrt((circle1m + circle2m)/3.14);
+											this.radius = Math.sqrt((circle1m + circle2m)/3.14)
+											document.getElementById('svg').removeChild(circles[i].circle)
+											this.update(1)
+											circles.splice(i,1)
+											if ( index > i ){
+												index --
+											}
+											i --
+										}
+										else {
+											circles[i].info.velocity.x = (this.info.velocity.x * circle1m + circles[i].info.velocity.x * circle2m) / (circle1m + circle2m)
+											circles[i].info.velocity.y = (this.info.velocity.y * circle1m + circles[i].info.velocity.y * circle2m) / (circle1m + circle2m)
+											circles[i].circle.r.baseVal.value = Math.sqrt((circle1m + circle2m)/3.14);
+											circles[i].radius = Math.sqrt((circle1m + circle2m)/3.14)
+											circles[i].update(1)
+											document.getElementById('svg').removeChild(this.circle)
+											circles.splice(index,1)
+											if( index == circles.length ){
+												index = 0
+												i = 1
+											}
+										}
+									}
+									else {
+										circles[i].circle.style = "fill:rgb(" + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + ")"
+										var temp1Y = circles[i].info.cy;
+										var temp2Y = this.info.cy;
+										var collision_angle = Math.atan2((circles[i].info.cy - this.info.cy), (circles[i].info.cx - this.info.cx));
+										var speed1 = Math.sqrt( Math.pow(this.info.velocity.y,2) + Math.pow(this.info.velocity.x,2));
+										var speed2 = Math.sqrt( Math.pow(circles[i].info.velocity.y,2) + Math.pow(circles[i].info.velocity.x,2));
+
+										var direction_1 = Math.atan2(this.info.velocity.y, this.info.velocity.x);
+										var direction_2 = Math.atan2(circles[i].info.velocity.y, circles[i].info.velocity.x);
+										var new_xspeed_1 = speed1 * Math.cos(direction_1 - collision_angle);
+										var new_yspeed_1 = speed1 * Math.sin(direction_1 - collision_angle);
+										var new_xspeed_2 = speed2 * Math.cos(direction_2 - collision_angle);
+										var new_yspeed_2 = speed2 * Math.sin(direction_2 - collision_angle);
+
+										var final_xspeed_1 = ((circle1m - circle2m) * new_xspeed_1 + (circle2m + circle2m) * new_xspeed_2) / (circle1m + circle2m);
+										var final_xspeed_2 = ((circle1m + circle1m) * new_xspeed_1 + (circle2m - circle1m) * new_xspeed_2) / (circle1m + circle2m);
+										var final_yspeed_1 = new_yspeed_1;
+										var final_yspeed_2 = new_yspeed_2;
+
+										var cosAngle = Math.cos(collision_angle);
+										var sinAngle = Math.sin(collision_angle);
+										this.info.velocity.x = cosAngle * final_xspeed_1 - sinAngle * final_yspeed_1;
+										this.info.velocity.y = sinAngle * final_xspeed_1 + cosAngle * final_yspeed_1;
+										circles[i].info.velocity.x = cosAngle * final_xspeed_2 - sinAngle * final_yspeed_2;
+										circles[i].info.velocity.y = sinAngle * final_xspeed_2 + cosAngle * final_yspeed_2;
+
+										// var initalAngle1 = Math.atan2(this.info.cy, this.info.cx);
+										// var initalAngle2 = Math.atan2(circles[i].info.cy, circles[i].info.cx);
+										// var tempDistance = this.radius + circles[i].radius - Math.sqrt((this.info.cy - circles[i].info.cy) * (this.info.cy - circles[i].info.cy) + (this.info.cx - circles[i].info.cx) * (this.info.cx - circles[i].info.cx)) + 2
+										// this.info.cx += tempDistance * circle2m / ( circle1m + circle2m) * Math.cos(initalAngle1)
+										// this.info.cy += tempDistance * circle2m / ( circle1m + circle2m) * Math.sin(initalAngle1)
+										// circles[i].info.cx += tempDistance * circle1m / ( circle1m + circle2m) * Math.cos(initalAngle2)
+										// circles[i].info.cy += tempDistance * circle1m / ( circle1m + circle2m) * Math.cos(initalAngle2)
+
+										this.update(1)
+										circles[i].update(1)
+									}
+
+									this.circle.style = "fill:rgb(" + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + "," + String(Math.round(Math.random()*255)) + ")"
+								}
+							}
+							else if (this.touching == true && circles[i].touching == true) {
+								this.touching = false;
+								circles[i].touching = false;
+							}
+						}
+					}
+				}
+			}
+		}
 		//creates the SVG element and returns it
 		var makeSVG = function(tag, attrs) {
 	        var el= document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -86,9 +228,9 @@
 
 		//a loop that updates the circle's position on the screen
 		this.loop = function(){
-			for(circle in circles)
-			{
-				circles[circle].update(1);
+			for(var i = 0; i < circles.length; i++){
+				circles[i].update(1);
+				circles[i].collision(i, circles)
 			}
 		}
 
@@ -98,6 +240,7 @@
 			// console.log('created a new circle!', new_circle);
 		}
 
+		time_pressed = 300;
 		//create one circle when the game starts
 		this.createNewCircle(document.body.clientWidth/2, document.body.clientHeight/2);
 	}
